@@ -1,59 +1,84 @@
 import streamlit as st
+import numpy as np
 import random
 
-st.set_page_config(page_title="Wordle 게임", layout="centered")
-st.title("🟩 단어 추리 게임 (Wordle 스타일)")
+st.set_page_config(page_title="미로 탈출 게임", layout="centered")
+st.title("🧩 미로 탈출 게임")
 
-# --- 단어 목록 (원한다면 외부 txt 파일로 분리 가능) ---
-WORDS = ["APPLE", "GRAPE", "BRAVE", "PLANT", "CRANE", "SMART", "GLASS", "TRUST", "STORY", "CANDY"]
+# --- 미로 생성 ---
+def generate_maze(size=10, wall_prob=0.2):
+    maze = np.full((size, size), "⬜")
+    for i in range(size):
+        for j in range(size):
+            if random.random() < wall_prob:
+                maze[i][j] = "⬛"
 
-# --- 상태 초기화 ---
-if "target" not in st.session_state:
-    st.session_state.target = random.choice(WORDS)
-    st.session_state.attempts = []
-    st.session_state.game_over = False
-    st.session_state.success = False
+    maze[0][0] = "🟥"  # 시작
+    maze[size-1][size-1] = "🟩"  # 도착
+    return maze
 
-# --- 입력 ---
-if not st.session_state.game_over:
-    guess = st.text_input("5글자 영어 단어를 입력하세요", max_chars=5).upper()
+# --- 초기화 ---
+if "maze" not in st.session_state:
+    st.session_state.maze = generate_maze()
+    st.session_state.pos = [0, 0]
+    st.session_state.size = 10
+    st.session_state.won = False
 
-    if st.button("제출"):
-        if len(guess) != 5 or guess not in WORDS:
-            st.warning("유효한 5글자 영어 단어를 입력하세요.")
-        else:
-            st.session_state.attempts.append(guess)
+maze = st.session_state.maze
+x, y = st.session_state.pos
+size = st.session_state.size
 
-            if guess == st.session_state.target:
-                st.session_state.game_over = True
-                st.session_state.success = True
-            elif len(st.session_state.attempts) >= 6:
-                st.session_state.game_over = True
+# --- 승리 여부 확인 ---
+if st.session_state.maze[x][y] == "🟩":
+    st.session_state.won = True
 
-# --- 힌트 표시 함수 ---
-def render_guess_row(guess, target):
-    result = []
-    for i in range(5):
-        if guess[i] == target[i]:
-            result.append(f"<span style='background-color:#6aaa64;color:white;padding:8px;border-radius:4px;margin:2px;font-weight:bold;'>{guess[i]}</span>")
-        elif guess[i] in target:
-            result.append(f"<span style='background-color:#c9b458;color:white;padding:8px;border-radius:4px;margin:2px;font-weight:bold;'>{guess[i]}</span>")
-        else:
-            result.append(f"<span style='background-color:#787c7e;color:white;padding:8px;border-radius:4px;margin:2px;font-weight:bold;'>{guess[i]}</span>")
-    return " ".join(result)
+# --- 미로 UI 표시 ---
+def render_maze():
+    display = ""
+    for i in range(size):
+        for j in range(size):
+            if [i, j] == st.session_state.pos:
+                display += "🟥"
+            elif maze[i][j] == "🟩":
+                display += "🟩"
+            else:
+                display += maze[i][j]
+        display += "<br>"
+    st.markdown(display, unsafe_allow_html=True)
 
-# --- 시도된 단어 표시 ---
-st.markdown("### 시도 기록")
-for word in st.session_state.attempts:
-    st.markdown(render_guess_row(word, st.session_state.target), unsafe_allow_html=True)
+render_maze()
 
-# --- 결과 메시지 ---
-if st.session_state.game_over:
-    if st.session_state.success:
-        st.success("🎉 정답입니다!")
-    else:
-        st.error(f"😢 실패! 정답은 **{st.session_state.target}** 였습니다.")
+# --- 이동 함수 ---
+def move(dx, dy):
+    if st.session_state.won:
+        return
+    nx = st.session_state.pos[0] + dx
+    ny = st.session_state.pos[1] + dy
+    if 0 <= nx < size and 0 <= ny < size:
+        if maze[nx][ny] != "⬛":
+            st.session_state.pos = [nx, ny]
 
-    if st.button("🔁 다시 시작"):
-        st.session_state.clear()
-        st.experimental_rerun()
+# --- 방향 버튼 ---
+col1, col2, col3 = st.columns(3)
+with col2:
+    if st.button("⬆️ 위"):
+        move(-1, 0)
+with col1:
+    if st.button("⬅️ 왼쪽"):
+        move(0, -1)
+with col3:
+    if st.button("➡️ 오른쪽"):
+        move(0, 1)
+with col2:
+    if st.button("⬇️ 아래"):
+        move(1, 0)
+
+# --- 승리 메시지 ---
+if st.session_state.won:
+    st.success("🎉 탈출 성공! 도착지에 도달했어요.")
+
+# --- 새 게임 버튼 ---
+if st.button("🔁 새 미로 시작"):
+    st.session_state.maze = generate_maze()
+    st.session_state.pos = [0, 0]
+    st.session_state.won = False

@@ -44,7 +44,7 @@ if st.button("대결"):
         st.session_state.score_computer += 1
 
     # --- 결과 출력 ---
-    st.markdown(f"### 🧑당신: {choices[user_choice]} ({user_choice})")
+    st.markdown(f"### 👤당신: {choices[user_choice]} ({user_choice})")
     st.markdown(f"### 💻컴퓨터: {choices[computer_choice]} ({computer_choice})")
     
     if result == "승리":

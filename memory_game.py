@@ -58,10 +58,22 @@ if st.button("🔁 새 퍼즐 생성"):
     st.session_state.checked = False
     st.rerun()
 
-# --- 테이블 렌더링 ---
-st.write("👇 숫자(1~9)를 직접 입력해보세요")
+# --- 숫자 입력 받기 ---
+for i in range(9):
+    for j in range(9):
+        if st.session_state.sudoku[i][j] == 0:
+            key = f"cell_{i}_{j}"
+            current = st.session_state.user_input[i][j]
+            value = st.text_input("", value=current, key=key, max_chars=1, label_visibility="collapsed")
+            if value in "123456789":
+                st.session_state.user_input[i][j] = value
+            elif value == "":
+                st.session_state.user_input[i][j] = ""
+            else:
+                st.session_state.user_input[i][j] = ""
 
-table_html = """
+# --- HTML 테이블 생성 ---
+style = """
 <style>
 table {
     border-collapse: collapse;
@@ -79,11 +91,11 @@ td {
 td.fixed {
     background-color: #ddd;
 }
-td.incorrect {
-    background-color: #ffdddd;
-}
 td.correct {
     background-color: #ddffdd;
+}
+td.incorrect {
+    background-color: #ffcccc;
 }
 td:nth-child(3), td:nth-child(6) {
     border-right: 3px solid black;
@@ -92,42 +104,32 @@ tr:nth-child(3) td, tr:nth-child(6) td {
     border-bottom: 3px solid black;
 }
 </style>
-<table>
 """
 
+table_html = "<table>"
 for i in range(9):
     table_html += "<tr>"
     for j in range(9):
         val = st.session_state.sudoku[i][j]
-        key = f"cell_{i}_{j}"
+        user_val = st.session_state.user_input[i][j]
+        css_class = ""
+
         if val != 0:
-            table_html += f"<td class='fixed'>{val}</td>"
+            cell_value = val
+            css_class = "fixed"
         else:
-            user_val = st.session_state.user_input[i][j]
-            input_val = st.text_input("", value=user_val, key=key, max_chars=1, label_visibility="collapsed")
-
-            # 유효한 값만 반영
-            if input_val in "123456789":
-                st.session_state.user_input[i][j] = input_val
-            elif input_val == "":
-                st.session_state.user_input[i][j] = ""
-            else:
-                st.session_state.user_input[i][j] = ""
-
-            # 정답 확인 시 표시
-            css_class = ""
-            if st.session_state.checked:
-                correct_val = str(st.session_state.solution[i][j])
-                if input_val == correct_val:
+            cell_value = user_val
+            if st.session_state.checked and user_val:
+                if user_val == str(st.session_state.solution[i][j]):
                     css_class = "correct"
                 else:
                     css_class = "incorrect"
 
-            table_html += f"<td class='{css_class}'>{input_val}</td>"
+        table_html += f"<td class='{css_class}'>{cell_value}</td>"
     table_html += "</tr>"
 table_html += "</table>"
 
-st.markdown(table_html, unsafe_allow_html=True)
+st.markdown(style + table_html, unsafe_allow_html=True)
 
 # --- 정답 확인 ---
 if st.button("✅ 정답 확인"):

@@ -51,11 +51,11 @@ emoji_vals = data["values"]
 e1, e2, e3 = data["emojis"]
 
 # --- 수식 표시 ---
-st.markdown("### 수식을 보고 이모지 값을 추리해보세요!")
+st.markdown("### 수식을 보고 이모지 값을 추리해보세요")
 for i, eq in enumerate(data["eqs"], start=1):
     st.markdown(f"**{i}️⃣** {eq}")
 st.markdown("---")
-st.markdown(f"**❓ 문제: {data['question']}**")
+st.markdown(f"**❓문제: {data['question']}**")
 
 # --- 사용자 입력 받기 ---
 answer = st.number_input(f"{e3} 값은 얼마일까요?", step=1, format="%d")

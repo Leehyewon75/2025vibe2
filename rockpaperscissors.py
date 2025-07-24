@@ -61,9 +61,10 @@ st.write(f"👤 당신: {st.session_state.score_user}점")
 st.write(f"💻 컴퓨터: {st.session_state.score_computer}점")
 st.write(f"🌀 라운드: {st.session_state.round}")
 
-# --- 초기화 ---
+# --- 초기화 버튼 ---
 if st.button("🔁 점수 초기화"):
     st.session_state.score_user = 0
     st.session_state.score_computer = 0
     st.session_state.round = 0
-    st.experimental_rerun()
+    st.rerun()  # ✅ 여기로 수정!
+

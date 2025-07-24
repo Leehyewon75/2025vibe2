@@ -2,7 +2,7 @@ import streamlit as st
 import random
 
 st.set_page_config(page_title="이모지 수학 퍼즐", layout="centered")
-st.title("🎲 난이도 선택 가능한 이모지 수학 퍼즐")
+st.title("🎲 이모지 수학 퍼즐")
 
 # --- 이모지 목록 ---
 EMOJIS = ["🍎", "🍌", "🍇", "🍉", "🍓", "🥝", "🍊", "🍍", "🍒"]

@@ -3,10 +3,10 @@ import numpy as np
 import random
 import copy
 
-st.set_page_config(page_title="스도쿠 게임", layout="centered")
-st.title("🧩 스도쿠 퍼즐")
+st.set_page_config(page_title="HTML 스도쿠", layout="centered")
+st.title("🧩 HTML 기반 스도쿠")
 
-# --- 유효성 검사 및 퍼즐 생성 ---
+# --- 스도쿠 생성 함수 ---
 def is_valid(board, row, col, num):
     if num in board[row]: return False
     if num in board[:, col]: return False
@@ -45,10 +45,7 @@ if "sudoku" not in st.session_state:
     puzzle, solution = generate_sudoku(clues=35)
     st.session_state.sudoku = puzzle
     st.session_state.solution = solution
-    st.session_state.user_input = [[
-        "" if puzzle[i][j] == 0 else str(puzzle[i][j])
-        for j in range(9)
-    ] for i in range(9)]
+    st.session_state.user_input = [["" for _ in range(9)] for _ in range(9)]
     st.session_state.checked = False
 
 # --- 새 퍼즐 버튼 ---
@@ -56,50 +53,69 @@ if st.button("🔁 새 퍼즐 생성"):
     puzzle, solution = generate_sudoku(clues=35)
     st.session_state.sudoku = puzzle
     st.session_state.solution = solution
-    st.session_state.user_input = [[
-        "" if puzzle[i][j] == 0 else str(puzzle[i][j])
-        for j in range(9)
-    ] for i in range(9)]
+    st.session_state.user_input = [["" for _ in range(9)] for _ in range(9)]
     st.session_state.checked = False
     st.rerun()
 
-# --- 스도쿠 보드 표시 함수 ---
-def render_board():
-    for i in range(9):
-        cols = st.columns(9)
-        for j in range(9):
-            key = f"cell_{i}_{j}"
-            is_given = st.session_state.sudoku[i][j] != 0
-            value = st.session_state.user_input[i][j]
+# --- 스타일 ---
+def get_cell_style(i, j, is_fixed, is_wrong=False):
+    style = "width:40px; height:40px; text-align:center; font-size:20px;"
+    style += "border:1px solid #999;"
+    if i % 3 == 0:
+        style += "border-top: 2px solid black;"
+    if j % 3 == 0:
+        style += "border-left: 2px solid black;"
+    if i == 8:
+        style += "border-bottom: 2px solid black;"
+    if j == 8:
+        style += "border-right: 2px solid black;"
+    if is_fixed:
+        style += "background-color:#eee;"
+    elif is_wrong:
+        style += "background-color:#ffcccc;"
+    elif not is_fixed:
+        style += "background-color:#fff;"
+    return style
 
-            # 테두리 스타일: 3x3 블록 기준으로 굵게 표시
-            border_style = "border: 1px solid #ccc;"
-            if i % 3 == 0 and i != 0:
-                border_style += "border-top: 3px solid gray;"
-            if j % 3 == 0 and j != 0:
-                border_style += "border-left: 3px solid gray;"
+# --- 렌더링 ---
+st.write("👇 빈 칸에 숫자(1~9)를 입력하세요")
 
-            cell_style = f"""
-                text-align:center;
-                padding:10px;
-                background-color:#eee;
-                border-radius:4px;
-                height: 42px;
-                line-height: 22px;
-                font-size: 18px;
-                {border_style}
-            """
+table_html = "<table style='border-collapse: collapse;'>"
+for i in range(9):
+    table_html += "<tr>"
+    for j in range(9):
+        fixed_val = st.session_state.sudoku[i][j]
+        solution_val = st.session_state.solution[i][j]
+        key = f"cell_{i}_{j}"
 
-            if is_given:
-                cols[j].markdown(f"<div style='{cell_style}'>{value}</div>", unsafe_allow_html=True)
+        if fixed_val != 0:
+            style = get_cell_style(i, j, is_fixed=True)
+            table_html += f"<td style='{style}'>{fixed_val}</td>"
+        else:
+            user_val = st.session_state.user_input[i][j]
+            input_val = st.text_input("", value=user_val, key=key, max_chars=1, label_visibility="collapsed")
+
+            # 숫자 필터
+            if input_val in "123456789":
+                st.session_state.user_input[i][j] = input_val
+            elif input_val == "":
+                st.session_state.user_input[i][j] = ""
             else:
-                user_input = cols[j].text_input(
-                    "", value, max_chars=1, key=key, label_visibility="collapsed"
-                )
-                if user_input in "123456789" or user_input == "":
-                    st.session_state.user_input[i][j] = user_input
+                input_val = ""
 
-render_board()
+            # 오답일 경우 스타일 다르게
+            is_wrong = False
+            if st.session_state.checked:
+                if input_val != str(solution_val):
+                    is_wrong = True
+
+            style = get_cell_style(i, j, is_fixed=False, is_wrong=is_wrong)
+            table_html += f"<td style='{style}'>{input_val}</td>"
+
+    table_html += "</tr>"
+table_html += "</table>"
+
+st.markdown(table_html, unsafe_allow_html=True)
 
 # --- 정답 확인 ---
 if st.button("✅ 정답 확인"):
@@ -108,48 +124,10 @@ if st.button("✅ 정답 확인"):
     for i in range(9):
         for j in range(9):
             if st.session_state.sudoku[i][j] == 0:
-                val = st.session_state.user_input[i][j]
-                if val != str(st.session_state.solution[i][j]):
+                user_val = st.session_state.user_input[i][j]
+                if user_val != str(st.session_state.solution[i][j]):
                     incorrect = True
     if incorrect:
-        st.error("❌ 틀린 곳이 있어요. 다시 시도해보세요!")
+        st.error("❌ 틀린 칸이 있어요. 다시 확인해보세요!")
     else:
-        st.success("🎉 정답입니다!")
-
-# --- 정답 확인 후 틀린 칸 표시 ---
-if st.session_state.checked:
-    st.subheader("🔎 오답 위치 표시")
-    for i in range(9):
-        cols = st.columns(9)
-        for j in range(9):
-            correct = str(st.session_state.solution[i][j])
-            user_val = st.session_state.user_input[i][j]
-            is_given = st.session_state.sudoku[i][j] != 0
-
-            border_style = "border: 1px solid #ccc;"
-            if i % 3 == 0 and i != 0:
-                border_style += "border-top: 3px solid gray;"
-            if j % 3 == 0 and j != 0:
-                border_style += "border-left: 3px solid gray;"
-
-            style = f"""
-                text-align:center;
-                padding:10px;
-                border-radius:4px;
-                height: 42px;
-                line-height: 22px;
-                font-size: 18px;
-                {border_style}
-            """
-
-            if is_given:
-                cols[j].markdown(
-                    f"<div style='background-color:#eee; {style}'>{st.session_state.sudoku[i][j]}</div>",
-                    unsafe_allow_html=True)
-            else:
-                if user_val == "":
-                    cols[j].markdown(f"<div style='color:red; {style}'>⬜</div>", unsafe_allow_html=True)
-                elif user_val != correct:
-                    cols[j].markdown(f"<div style='color:red; {style}'>❌</div>", unsafe_allow_html=True)
-                else:
-                    cols[j].markdown(f"<div style='color:green; {style}'>✔️</div>", unsafe_allow_html=True)
+        st.success("🎉 정답입니다! 잘했어요.")

@@ -2,7 +2,7 @@ import streamlit as st
 import random
 
 st.set_page_config(page_title="가위바위보 게임", layout="centered")
-st.title("✊✋✌️ 게임")
+st.title("✊✋✌️ 가위바위보 게임")
 
 # --- 상태 초기화 ---
 if "score_user" not in st.session_state:

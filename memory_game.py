@@ -2,7 +2,7 @@ import streamlit as st
 import random
 
 st.set_page_config(page_title="이모지 수학 퍼즐", layout="centered")
-st.title("🎲 이모지 수학 퍼즐")
+st.title("🎲이모지 퍼즐")
 
 # --- 이모지 목록 ---
 EMOJIS = ["🍎", "🍌", "🍇", "🍉", "🍓", "🥝", "🍊", "🍍", "🍒"]
@@ -63,13 +63,13 @@ answer = st.number_input(f"{e3} 값은 얼마일까요?", step=1, format="%d")
 # --- 제출 버튼 ---
 if st.button("제출"):
     if int(answer) == emoji_vals[e3]:
-        st.success("🎉 정답입니다! 잘했어요.")
+        st.success("🎉정답입니다!")
     else:
-        st.error("❌ 오답입니다. 다시 시도해보세요!")
+        st.error("❌오답입니다. 다시 도전해보세요")
     st.session_state.answered = True
 
 # --- 새 퍼즐 버튼 ---
-if st.button("🔁 새 퍼즐 생성"):
+if st.button("🔁새 퍼즐 생성"):
     st.session_state.puzzle = create_puzzle(difficulty)
     st.session_state.answered = False
     st.rerun()

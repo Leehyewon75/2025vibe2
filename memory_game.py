@@ -69,7 +69,7 @@ if st.button("제출"):
     st.session_state.answered = True
 
 # --- 새 퍼즐 버튼 ---
-if st.button("🔁새 퍼즐 생성"):
+if st.button("🔁새 퍼즐"):
     st.session_state.puzzle = create_puzzle(difficulty)
     st.session_state.answered = False
     st.rerun()

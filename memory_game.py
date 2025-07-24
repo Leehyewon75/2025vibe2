@@ -6,7 +6,7 @@ import copy
 st.set_page_config(page_title="스도쿠 게임", layout="centered")
 st.title("🧩 스도쿠 퍼즐")
 
-# --- 스도쿠 생성 함수 ---
+# --- 유효성 검사 및 퍼즐 생성 ---
 def is_valid(board, row, col, num):
     if num in board[row]: return False
     if num in board[:, col]: return False
@@ -40,7 +40,7 @@ def generate_sudoku(clues=35):
             count -= 1
     return board, full
 
-# --- 초기화 ---
+# --- 상태 초기화 ---
 if "sudoku" not in st.session_state:
     puzzle, solution = generate_sudoku(clues=35)
     st.session_state.sudoku = puzzle
@@ -51,7 +51,7 @@ if "sudoku" not in st.session_state:
     ] for i in range(9)]
     st.session_state.checked = False
 
-# --- 새 퍼즐 ---
+# --- 새 퍼즐 버튼 ---
 if st.button("🔁 새 퍼즐 생성"):
     puzzle, solution = generate_sudoku(clues=35)
     st.session_state.sudoku = puzzle
@@ -63,7 +63,7 @@ if st.button("🔁 새 퍼즐 생성"):
     st.session_state.checked = False
     st.rerun()
 
-# --- UI 렌더링 ---
+# --- 스도쿠 보드 표시 함수 ---
 def render_board():
     for i in range(9):
         cols = st.columns(9)
@@ -72,16 +72,26 @@ def render_board():
             is_given = st.session_state.sudoku[i][j] != 0
             value = st.session_state.user_input[i][j]
 
-            border_style = ""
+            # 테두리 스타일: 3x3 블록 기준으로 굵게 표시
+            border_style = "border: 1px solid #ccc;"
             if i % 3 == 0 and i != 0:
-                border_style += "border-top: 2px solid black;"
+                border_style += "border-top: 3px solid gray;"
             if j % 3 == 0 and j != 0:
-                border_style += "border-left: 2px solid black;"
+                border_style += "border-left: 3px solid gray;"
+
+            cell_style = f"""
+                text-align:center;
+                padding:10px;
+                background-color:#eee;
+                border-radius:4px;
+                height: 42px;
+                line-height: 22px;
+                font-size: 18px;
+                {border_style}
+            """
 
             if is_given:
-                cols[j].markdown(
-                    f"<div style='text-align:center; padding:6px; background-color:#eee; border-radius:4px; {border_style}'>{value}</div>",
-                    unsafe_allow_html=True)
+                cols[j].markdown(f"<div style='{cell_style}'>{value}</div>", unsafe_allow_html=True)
             else:
                 user_input = cols[j].text_input(
                     "", value, max_chars=1, key=key, label_visibility="collapsed"
@@ -106,7 +116,7 @@ if st.button("✅ 정답 확인"):
     else:
         st.success("🎉 정답입니다!")
 
-# --- 오답 시 시각 피드백 ---
+# --- 정답 확인 후 틀린 칸 표시 ---
 if st.session_state.checked:
     st.subheader("🔎 오답 위치 표시")
     for i in range(9):
@@ -116,26 +126,30 @@ if st.session_state.checked:
             user_val = st.session_state.user_input[i][j]
             is_given = st.session_state.sudoku[i][j] != 0
 
-            border_style = ""
+            border_style = "border: 1px solid #ccc;"
             if i % 3 == 0 and i != 0:
-                border_style += "border-top: 2px solid black;"
+                border_style += "border-top: 3px solid gray;"
             if j % 3 == 0 and j != 0:
-                border_style += "border-left: 2px solid black;"
+                border_style += "border-left: 3px solid gray;"
+
+            style = f"""
+                text-align:center;
+                padding:10px;
+                border-radius:4px;
+                height: 42px;
+                line-height: 22px;
+                font-size: 18px;
+                {border_style}
+            """
 
             if is_given:
                 cols[j].markdown(
-                    f"<div style='text-align:center; background-color:#eee; padding:6px; border-radius:4px; {border_style}'>{st.session_state.sudoku[i][j]}</div>",
+                    f"<div style='background-color:#eee; {style}'>{st.session_state.sudoku[i][j]}</div>",
                     unsafe_allow_html=True)
             else:
                 if user_val == "":
-                    cols[j].markdown(
-                        f"<div style='color:red; text-align:center; {border_style}'>⬜</div>",
-                        unsafe_allow_html=True)
+                    cols[j].markdown(f"<div style='color:red; {style}'>⬜</div>", unsafe_allow_html=True)
                 elif user_val != correct:
-                    cols[j].markdown(
-                        f"<div style='color:red; text-align:center; {border_style}'>❌</div>",
-                        unsafe_allow_html=True)
+                    cols[j].markdown(f"<div style='color:red; {style}'>❌</div>", unsafe_allow_html=True)
                 else:
-                    cols[j].markdown(
-                        f"<div style='color:green; text-align:center; {border_style}'>✔️</div>",
-                        unsafe_allow_html=True)
+                    cols[j].markdown(f"<div style='color:green; {style}'>✔️</div>", unsafe_allow_html=True)

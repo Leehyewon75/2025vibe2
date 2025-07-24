@@ -29,10 +29,10 @@ quiz = st.session_state.current
 st.markdown(f"### 이모지: {quiz['emoji']}")
 st.caption(f"💡 키워드 힌트: *{quiz['keyword']}*")
 
-# --- 입력 칸 ---
+# --- 입력 받기 ---
 user_input = st.text_input("정답을 입력하세요!", value=st.session_state.user_answer)
 
-# --- 제출 처리 ---
+# --- 제출 ---
 if st.button("제출") or st.session_state.show_result:
     st.session_state.user_answer = user_input
     if not st.session_state.show_result:
@@ -41,6 +41,7 @@ if st.button("제출") or st.session_state.show_result:
             st.session_state.score += 1
         else:
             st.error("❌ 오답이에요!")
+            st.info(f"📌 정답은 **{quiz['answer']}** 입니다.")
         st.session_state.show_result = True
 
 # --- 다음 문제 버튼 ---
@@ -51,6 +52,6 @@ if st.session_state.show_result:
         st.session_state.user_answer = ""
         st.rerun()
 
-# --- 점수 ---
+# --- 점수 표시 ---
 st.markdown("---")
 st.metric(label="현재 점수", value=f"{st.session_state.score} 점")

@@ -32,7 +32,7 @@ st.subheader("무엇을 내시겠어요?")
 user_choice = st.radio("당신의 선택:", list(choices.keys()), horizontal=True)
 
 # --- 제출 버튼 ---
-if st.button("대결!"):
+if st.button("대결"):
     computer_choice = random.choice(list(choices.keys()))
     result = get_result(user_choice, computer_choice)
     st.session_state.round += 1
@@ -44,22 +44,22 @@ if st.button("대결!"):
         st.session_state.score_computer += 1
 
     # --- 결과 출력 ---
-    st.markdown(f"### 🧑 당신: {choices[user_choice]} ({user_choice})")
-    st.markdown(f"### 💻 컴퓨터: {choices[computer_choice]} ({computer_choice})")
+    st.markdown(f"### 🧑당신: {choices[user_choice]} ({user_choice})")
+    st.markdown(f"### 💻컴퓨터: {choices[computer_choice]} ({computer_choice})")
     
     if result == "승리":
-        st.success("🎉 당신이 이겼어요!")
+        st.success("🎉당신이 이겼어요")
     elif result == "패배":
-        st.error("💥 컴퓨터가 이겼어요!")
+        st.error("💥컴퓨터가 이겼어요")
     else:
-        st.info("😐 무승부입니다!")
+        st.info("😐무승부입니다!")
 
 # --- 점수판 ---
 st.markdown("---")
-st.subheader("📊 점수판")
-st.write(f"👤 당신: {st.session_state.score_user}점")
-st.write(f"💻 컴퓨터: {st.session_state.score_computer}점")
-st.write(f"🌀 라운드: {st.session_state.round}")
+st.subheader("📊점수판")
+st.write(f"👤당신: {st.session_state.score_user}점")
+st.write(f"💻컴퓨터: {st.session_state.score_computer}점")
+st.write(f"🌀라운드: {st.session_state.round}")
 
 # --- 초기화 버튼 ---
 if st.button("🔁 점수 초기화"):

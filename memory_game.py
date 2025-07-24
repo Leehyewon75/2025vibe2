@@ -1,38 +1,63 @@
 import streamlit as st
+import random
 
-st.set_page_config(page_title="이모지 수학 퍼즐", layout="centered")
-st.title("🍎🍌 이모지 수학 퍼즐")
+st.set_page_config(page_title="랜덤 이모지 수학 퍼즐", layout="centered")
+st.title("🎲 랜덤 이모지 수학 퍼즐")
 
-# --- 퍼즐 정의 ---
-PUZZLE = {
-    "🍎": 5,
-    "🍌": 7,
-    "🍇": 4
-}
+# --- 이모지 리스트 ---
+EMOJIS = ["🍎", "🍌", "🍇", "🍉", "🍓", "🥝", "🍊", "🍍", "🍒"]
 
-# 수식 구성
-eq1 = f"{'🍎'} + {'🍎'} + {'🍎'} = {PUZZLE['🍎'] * 3}"
-eq2 = f"{'🍎'} + {'🍌'} + {'🍌'} = {PUZZLE['🍎'] + PUZZLE['🍌'] * 2}"
-eq3 = f"{'🍌'} - {'🍇'} = {PUZZLE['🍌'] - PUZZLE['🍇']}"
-question = f"{'🍇'} = ?"
+# --- 퍼즐 초기화 ---
+def create_puzzle():
+    chosen = random.sample(EMOJIS, 3)
+    a, b, c = random.sample(range(1, 10), 3)
+    puzzle = {
+        chosen[0]: a,
+        chosen[1]: b,
+        chosen[2]: c
+    }
 
-# --- UI 표시 ---
+    eq1 = f"{chosen[0]} + {chosen[0]} + {chosen[0]} = {a * 3}"
+    eq2 = f"{chosen[0]} + {chosen[1]} + {chosen[1]} = {a + b * 2}"
+    eq3 = f"{chosen[1]} - {chosen[2]} = {b - c}"
+    question = f"{chosen[2]} = ?"
+
+    return {
+        "emojis": chosen,
+        "values": puzzle,
+        "eqs": [eq1, eq2, eq3],
+        "question": question
+    }
+
+# --- 상태 저장 ---
+if "puzzle" not in st.session_state:
+    st.session_state.puzzle = create_puzzle()
+    st.session_state.answered = False
+
+data = st.session_state.puzzle
+emoji_vals = data["values"]
+e1, e2, e3 = data["emojis"]
+
+# --- 수식 출력 ---
 st.markdown("### 🧠 수식을 보고 이모지 값을 추리해보세요!")
-st.markdown(f"**1️⃣** {eq1}")
-st.markdown(f"**2️⃣** {eq2}")
-st.markdown(f"**3️⃣** {eq3}")
+for idx, eq in enumerate(data["eqs"], start=1):
+    st.markdown(f"**{idx}️⃣** {eq}")
 st.markdown("---")
-st.markdown(f"**❓ 문제: {question}**")
+st.markdown(f"**❓ 문제: {data['question']}**")
 
 # --- 정답 입력 ---
-answer = st.number_input("🍇 값은 얼마일까요?", step=1, format="%d")
+answer = st.number_input(f"{e3} 값은 얼마일까요?", step=1, format="%d")
 
-# --- 정답 확인 ---
+# --- 제출 버튼 ---
 if st.button("제출"):
-    if int(answer) == PUZZLE["🍇"]:
+    if int(answer) == emoji_vals[e3]:
         st.success("🎉 정답입니다! 잘했어요.")
     else:
-        st.error("❌ 오답이에요. 다시 생각해보세요!")
+        st.error(f"❌ 오답이에요. 다시 시도해보세요!")
+    st.session_state.answered = True
 
-# --- 새 게임 안내 (단일 퍼즐 고정형) ---
-st.info("이 버전은 고정된 퍼즐입니다. 원하면 랜덤 퍼즐 버전도 만들어줄게요!")
+# --- 새 문제 버튼 ---
+if st.button("🔁 새 퍼즐 생성"):
+    st.session_state.puzzle = create_puzzle()
+    st.session_state.answered = False
+    st.rerun()

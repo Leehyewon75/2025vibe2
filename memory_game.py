@@ -1,134 +1,123 @@
 import streamlit as st
+import numpy as np
 import random
-import time
+import copy
 
-# --- 설정 ---
-LEVELS = {
-    "초급 (4x4)": (4, 4),
-    "중급 (5x4)": (5, 4),
-    "고급 (6x6)": (6, 6),
-}
+st.set_page_config(page_title="스도쿠 게임", layout="centered")
+st.title("🧩 스도쿠 퍼즐")
 
-EMOJIS = ["🍎", "🍌", "🍒", "🍇", "🍓", "🍍", "🥝", "🥑",
-          "🍉", "🍑", "🥥", "🍋", "🍈", "🌽", "🍅", "🍆",
-          "🥕", "🥔"]
+# --- 스도쿠 생성 함수 ---
+def is_valid(board, row, col, num):
+    if num in board[row]:
+        return False
+    if num in board[:, col]:
+        return False
+    start_row, start_col = 3*(row//3), 3*(col//3)
+    if num in board[start_row:start_row+3, start_col:start_col+3]:
+        return False
+    return True
 
-# --- 최고 기록 저장 함수 ---
-@st.cache_data(show_spinner=False)
-def get_high_scores():
-    return {}
+def solve(board):
+    for i in range(9):
+        for j in range(9):
+            if board[i][j] == 0:
+                nums = list(range(1, 10))
+                random.shuffle(nums)
+                for num in nums:
+                    if is_valid(board, i, j, num):
+                        board[i][j] = num
+                        if solve(board):
+                            return True
+                        board[i][j] = 0
+                return False
+    return True
 
-def update_high_score(level, attempts, elapsed):
-    scores = get_high_scores()
-    best = scores.get(level, {"attempts": float("inf"), "time": float("inf")})
+def generate_sudoku(clues=30):
+    board = np.zeros((9, 9), dtype=int)
+    solve(board)
+    full_board = copy.deepcopy(board)
+    count = 81 - clues
+    while count > 0:
+        r, c = random.randint(0, 8), random.randint(0, 8)
+        if board[r][c] != 0:
+            board[r][c] = 0
+            count -= 1
+    return board, full_board
 
-    updated = False
-    if attempts < best["attempts"] or (attempts == best["attempts"] and elapsed < best["time"]):
-        best["attempts"] = attempts
-        best["time"] = elapsed
-        scores[level] = best
-        st.cache_data.clear()
-        st.cache_data(show_spinner=False)(lambda: scores)()
-        updated = True
+# --- 초기화 ---
+if "sudoku" not in st.session_state:
+    puzzle, solution = generate_sudoku(clues=35)
+    st.session_state.sudoku = puzzle
+    st.session_state.solution = solution
+    st.session_state.user_input = [[
+        "" if puzzle[i][j] == 0 else str(puzzle[i][j])
+        for j in range(9)
+    ] for i in range(9)]
+    st.session_state.checked = False
 
-    return updated
+# --- 게임 리셋 ---
+if st.button("🔁 새 퍼즐 생성"):
+    puzzle, solution = generate_sudoku(clues=35)
+    st.session_state.sudoku = puzzle
+    st.session_state.solution = solution
+    st.session_state.user_input = [[
+        "" if puzzle[i][j] == 0 else str(puzzle[i][j])
+        for j in range(9)
+    ] for i in range(9)]
+    st.session_state.checked = False
+    st.rerun()
 
-# --- 상태 초기화 ---
-if 'game_started' not in st.session_state:
-    st.session_state.game_started = False
-if 'flipped' not in st.session_state:
-    st.session_state.flipped = []
-if 'matched' not in st.session_state:
-    st.session_state.matched = []
-if 'cards' not in st.session_state:
-    st.session_state.cards = []
-if 'start_time' not in st.session_state:
-    st.session_state.start_time = None
-if 'attempts' not in st.session_state:
-    st.session_state.attempts = 0
-if 'level' not in st.session_state:
-    st.session_state.level = "초급 (4x4)"
+# --- UI 표시 ---
+def render_board():
+    for i in range(9):
+        cols = st.columns(9)
+        for j in range(9):
+            key = f"cell_{i}_{j}"
+            if st.session_state.sudoku[i][j] != 0:
+                cols[j].markdown(
+                    f"<div style='text-align:center; padding:6px; background-color:#eee; border-radius:4px;'>{st.session_state.sudoku[i][j]}</div>",
+                    unsafe_allow_html=True)
+            else:
+                user_val = st.session_state.user_input[i][j]
+                user_val = cols[j].text_input(
+                    "", user_val, max_chars=1, key=key, label_visibility="collapsed"
+                )
+                if user_val in "123456789" or user_val == "":
+                    st.session_state.user_input[i][j] = user_val
 
-# --- 타이머 ---
-def get_elapsed_time():
-    if st.session_state.start_time:
-        return int(time.time() - st.session_state.start_time)
-    return 0
+render_board()
 
-# --- 카드 초기 생성 ---
-def init_game(level):
-    rows, cols = LEVELS[level]
-    total_cards = rows * cols
-    assert total_cards % 2 == 0
+# --- 정답 체크 ---
+if st.button("✅ 정답 확인"):
+    st.session_state.checked = True
+    incorrect = False
+    for i in range(9):
+        for j in range(9):
+            if st.session_state.sudoku[i][j] == 0:
+                user_val = st.session_state.user_input[i][j]
+                correct_val = st.session_state.solution[i][j]
+                if user_val != str(correct_val):
+                    incorrect = True
 
-    pairs = EMOJIS[:total_cards // 2] * 2
-    random.shuffle(pairs)
+    if incorrect:
+        st.error("❌ 틀린 부분이 있어요. 다시 확인해보세요!")
+    else:
+        st.success("🎉 정답입니다! 퍼즐을 모두 맞췄어요!")
 
-    st.session_state.cards = pairs
-    st.session_state.flipped = []
-    st.session_state.matched = []
-    st.session_state.attempts = 0
-    st.session_state.start_time = time.time()
-    st.session_state.game_started = True
-
-# --- 카드 뒤집기 ---
-def flip_card(index):
-    if index in st.session_state.flipped or index in st.session_state.matched:
-        return
-
-    st.session_state.flipped.append(index)
-
-    if len(st.session_state.flipped) == 2:
-        i1, i2 = st.session_state.flipped
-        st.session_state.attempts += 1
-        if st.session_state.cards[i1] == st.session_state.cards[i2]:
-            st.session_state.matched.extend([i1, i2])
-        time.sleep(0.5)
-        st.session_state.flipped = []
-
-# --- UI ---
-st.title("🃏 기억력 카드 맞추기 게임")
-
-# 최고 기록 표시
-high_scores = get_high_scores()
-if st.session_state.level in high_scores:
-    hs = high_scores[st.session_state.level]
-    st.info(f"🏆 최고 기록 - {st.session_state.level}: {hs['attempts']}회 시도, {hs['time']}초")
-
-# 레벨 선택 & 시작
-if not st.session_state.game_started:
-    level = st.selectbox("난이도 선택", list(LEVELS.keys()), index=list(LEVELS.keys()).index(st.session_state.level))
-    if st.button("게임 시작"):
-        st.session_state.level = level
-        init_game(level)
-else:
-    rows, cols = LEVELS[st.session_state.level]
-    cards = st.session_state.cards
-
-    st.write(f"🧠 시도 횟수: {st.session_state.attempts}회")
-    st.write(f"⏱️ 경과 시간: {get_elapsed_time()}초")
-
-    for r in range(rows):
-        cols_ui = st.columns(cols)
-        for c in range(cols):
-            idx = r * cols + c
-            label = "❓"
-            if idx in st.session_state.matched or idx in st.session_state.flipped:
-                label = cards[idx]
-            if cols_ui[c].button(label, key=f"card_{idx}"):
-                flip_card(idx)
-
-    # 승리 시
-    if len(st.session_state.matched) == len(cards):
-        elapsed = get_elapsed_time()
-        st.success(f"🎉 축하합니다! 모든 카드를 맞췄어요.")
-        st.write(f"총 시도: {st.session_state.attempts}회")
-        st.write(f"총 소요 시간: {elapsed}초")
-
-        updated = update_high_score(st.session_state.level, st.session_state.attempts, elapsed)
-        if updated:
-            st.balloons()
-            st.success("📈 새로운 최고 기록입니다!")
-
-        if st.button("다시 시작"):
-            st.session_state.game_started = False
+# --- 오답 표시 (선택) ---
+if st.session_state.checked:
+    st.subheader("🔎 오답 위치 확인")
+    for i in range(9):
+        cols = st.columns(9)
+        for j in range(9):
+            correct = str(st.session_state.solution[i][j])
+            user_val = st.session_state.user_input[i][j]
+            if st.session_state.sudoku[i][j] == 0:
+                if user_val == "":
+                    cols[j].markdown("🟥", unsafe_allow_html=True)
+                elif user_val != correct:
+                    cols[j].markdown(f"<span style='color:red;'>❌</span>", unsafe_allow_html=True)
+                else:
+                    cols[j].markdown(f"<span style='color:green;'>✔️</span>", unsafe_allow_html=True)
+            else:
+                cols[j].markdown("✔️", unsafe_allow_html=True)
